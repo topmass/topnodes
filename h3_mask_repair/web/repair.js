@@ -72,7 +72,7 @@ function openEditor(node, widget) {
    const [im,mask]=await Promise.all([load('frame'),load('mask')]);if(token!==loadId)return;
    canvas.width=info.width;canvas.height=info.height;canvas.style.width=`min(100%, ${48*info.width/info.height}vh)`;base=im;overlay=document.createElement('canvas');overlay.width=info.width;overlay.height=info.height;
    const c=overlay.getContext('2d');c.drawImage(mask,0,0);const pixels=c.getImageData(0,0,info.width,info.height);
-   for(let i=0;i<pixels.data.length;i+=4){pixels.data[i+3]=pixels.data[i];pixels.data[i]=40;pixels.data[i+1]=240;pixels.data[i+2]=160;}c.putImageData(pixels,0,0);draw();status.textContent='Ready. Corrections are saved in this workflow.';
+   for(let i=0;i<pixels.data.length;i+=4){pixels.data[i+3]=pixels.data[i];pixels.data[i]=40;pixels.data[i+1]=240;pixels.data[i+2]=160;}c.putImageData(pixels,0,0);draw();status.textContent=info.repairs_skipped ? 'New source or tracking result: old repairs were skipped. These are the new masks. Clear all repairs before adding new corrections; save a workflow copy first if you want to keep the old edits.' : 'Ready. Corrections are saved in this workflow.';
   }catch(e){status.textContent=e.message;}
  }
  node.refreshRepair=refresh;

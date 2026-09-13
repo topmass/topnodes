@@ -1,4 +1,5 @@
 """Run: PYTHONPATH=. .venv/bin/python custom_nodes/h3_mask_repair/test_repair.py"""
+import json
 import importlib.util
 import tempfile
 from pathlib import Path
@@ -25,9 +26,15 @@ with tempfile.TemporaryDirectory() as d:
  result=m.H3MaskRepair().repair(images,masks,visible_frames=4)
  assert result['ui']['h3_mask_repair'][0]['frames']==4
  assert len(list(Path(d).rglob('frame-*.jpg')))==4
- try:m.H3MaskRepair().repair(images,masks,repairs='{"signature":"wrong","steps":[{"frame":0,"end":0}]}')
- except ValueError:pass
- else:raise AssertionError('Stale repair accepted')
+ old_repairs=json.dumps({'signature':'wrong','steps':[step]})
+ assert m.H3MaskRepair().check_lazy_status(images,masks,True,old_repairs)==[]
+ skipped=m.H3MaskRepair().repair(images,masks,repairs=old_repairs)
+ assert torch.equal(skipped['result'][0],masks)
+ assert skipped['ui']['h3_mask_repair'][0]['repairs_skipped']
+ current=json.dumps({'signature':m.repair_signature(images,masks),'steps':[paint]})
+ applied=m.H3MaskRepair().repair(images,masks,repairs=current)
+ assert applied['result'][0][2,8,8]==1
+ assert not applied['ui']['h3_mask_repair'][0]['repairs_skipped']
 print('PASS: range isolation, point coordinates, paint, invalid ranges, stale masks, preview count')
 
 r=m.apply_mask_repairs(images,masks,[step,{'frame':2,'end':2,'restore':True}],segment,track)

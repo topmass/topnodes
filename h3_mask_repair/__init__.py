@@ -84,8 +84,11 @@ class H3MaskRepair:
     OUTPUT_NODE = False
     DESCRIPTION = 'Preview and repair the selected subject mask. Open the editor after running the mask stage. Repairs are stored in the workflow; save the workflow to keep them. No H3 sampling is required to apply mask repairs.'
 
-    def check_lazy_status(self, enabled, repairs, model=None, **kwargs):
-        steps = json.loads(repairs).get('steps', []) if enabled else []
+    def check_lazy_status(self, images, masks, enabled, repairs, model=None, **kwargs):
+        spec = json.loads(repairs)
+        steps = spec.get('steps', []) if enabled else []
+        if steps and spec.get('signature') != repair_signature(images, masks):
+            return []
         needs_model = any(s.get('positive') or int(s['end']) > int(s['frame']) for s in steps)
         return ['model'] if needs_model and model is None else []
 
@@ -95,8 +98,9 @@ class H3MaskRepair:
         spec = json.loads(repairs)
         signature = repair_signature(images, masks)
         steps = spec.get('steps', []) if enabled else []
-        if steps and spec.get('signature') != signature:
-            raise ValueError('The source video or selected SAM mask changed. Open the repair editor and clear repairs, then run the mask stage again.')
+        repairs_skipped = bool(steps) and spec.get('signature') != signature
+        if repairs_skipped:
+            steps = []
         def segment(frame, positive, negative):
             if model is None:
                 raise ValueError('Connect the SAM model to use point repairs.')
@@ -121,7 +125,7 @@ class H3MaskRepair:
             Image.fromarray(frame).resize((preview_w, preview_h)).save(directory / f'frame-{i}.jpg', quality=85)
             mask = F.interpolate(result[i:i+1, None].float(), size=(preview_h, preview_w), mode='nearest')[0, 0]
             Image.fromarray((mask.detach().cpu().clamp(0, 1).numpy() * 255).astype(np.uint8)).save(directory / f'mask-{i}.png')
-        return {'ui': {'h3_mask_repair': [{'directory': relative, 'frames': visible_frames, 'width': preview_w, 'height': preview_h, 'signature': signature}]}, 'result': (result,)}
+        return {'ui': {'h3_mask_repair': [{'directory': relative, 'frames': visible_frames, 'width': preview_w, 'height': preview_h, 'signature': signature, 'repairs_skipped': repairs_skipped}]}, 'result': (result,)}
 
 
 NODE_CLASS_MAPPINGS = {'H3MaskRepair': H3MaskRepair}

@@ -57,7 +57,7 @@ Select equivalent compatible files if your filenames differ. The supplied quanti
 1. Upload the source clip, choose output size, and provide reference A (and B in the duo).
 2. Set each SAM prompt and maximum tracks. Run the mask preview stage with caches set to **Track + save**.
 3. Choose object indices separately: `0` selects the first tracked object, `1` the second, blank combines all tracks. A and B can use the same saved slot with different indices.
-4. Set good tracking slots to **Reuse saved**. Slots hold their latest save only. Changing video, resolution, or frame conversion invalidates the saved masks.
+4. Set good tracking slots to **Reuse saved**. Slots hold their latest save only. Changing video, resolution, or frame conversion invalidates the saved masks. After fresh tracking, old repairs from a different source/mask are skipped without blocking generation. The editor shows a notice. Saved edits remain in the workflow; save a copy before clearing them to start new corrections.
 5. Optionally open each mask repair editor. Scrub to a failure, add a target point, exclude another area, or paint/erase. Choose this frame, this frame through the end, or a custom endpoint. Apply queues mask processing only.
 6. Save the workflow to keep corrections. Reset restores one frame's original selected SAM mask; Undo removes the latest correction. Later repairs affect only their specified range.
 7. Enable video generation. Keep repair nodes enabled to use corrections; set their `enabled` input false to use selected SAM masks without repairs. Preview-stage switches do not control whether saved corrections feed generation.
