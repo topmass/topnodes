@@ -21,16 +21,13 @@ Install these public packs separately:
 
 Install their requirements in ComfyUI's Python environment. TopNodes itself uses ComfyUI's existing torch, numpy, and Pillow dependencies. FFmpeg must be installed. The supplied SageAttention selection requires a compatible SageAttention installation. Sol-Attn/VSA requires a compatible CUDA build of [comfy-kitchen](https://github.com/Comfy-Org/comfy-kitchen) with `sol_attn`; installing this Python node alone does not install GPU kernels. This package does not download models or make outbound network requests.
 
-### Required FPS patch
+### Automatic video timing fix
 
-These workflows expose `fps_rounding` on VideoHelperSuite's FFmpeg loader. If your installed loader does not offer it, apply the included patch from the VideoHelperSuite directory:
+TopNodes includes `install.py` for ComfyUI-Manager installation and `prestartup_script.py` for normal ComfyUI startup. After installing or updating TopNodes, restart ComfyUI. The startup helper checks the installed VideoHelperSuite loader and applies the supported timing changes automatically, including after a VideoHelperSuite update.
 
-```sh
-git apply --check ../topnodes/patches/vhs-fps-rounding.patch
-git apply ../topnodes/patches/vhs-fps-rounding.patch
-```
+The helper adds the FPS-rounding input and prevents raw-video output from duplicating opening frames on clips with offset timestamps. It creates an exact `.topnodes-<hash>.bak` backup alongside the loader before changing it. Already-patched files are left untouched. Unsupported versions or file-permission errors produce a `[TopNodes]` console message; the helper does not force a patch or download dependencies. Install VideoHelperSuite first, or install it later and restart.
 
-The patch adds FPS rounding and disables a second raw-output FPS conversion that can duplicate the opening frame on timestamp-offset clips. If you applied the earlier rounding-only patch, add `"-fps_mode", "passthrough",` before `"-f", "rawvideo"` in the FFmpeg generator output arguments. It was checked against public upstream source when packaged. If the check fails, inspect your installed version instead of forcing the patch. Skip it if your loader already supports `fps_rounding`. Restart after applying. VideoHelperSuite updates may require reapplying it.
+A manual Git pull does not run installers by itself; the next ComfyUI startup runs this check. To run the same helper directly, use `python install.py` from the TopNodes directory. The patch file remains available under `patches/` for inspection, but normal installation does not require applying it manually.
 
 ## Workflows and models
 
@@ -86,6 +83,7 @@ PYTHONPATH=. python custom_nodes/topnodes/h3_sam_cache.py
 PYTHONPATH=. python custom_nodes/topnodes/h3_mask_repair/test_repair.py
 PYTHONPATH=. python custom_nodes/topnodes/check_package.py
 python custom_nodes/topnodes/check_video_loader.py
+python custom_nodes/topnodes/check_install.py
 ```
 
 Mask tests cover repair ranges, point coordinates, painting, reset, source changes, visible frame counts, and native crop/uncrop with isolated masked frames. Packaging checks cover node registration, workflow settings, and removal of saved repairs. These checks do not run a complete H3 generation or certify every GPU configuration.
