@@ -3841,8 +3841,7 @@
           "links": [
             2890,
             2926,
-            2928,
-            2937
+            2928
           ]
         },
         {
@@ -6195,7 +6194,7 @@
     {
       "id": 1123,
       "type": "ImageAndMaskPreview",
-      "title": "A - REPAIRED MASK - Source overlay",
+      "title": "A - Prepare mask suite (no image preview)",
       "pos": [
         -2300,
         7210
@@ -6204,14 +6203,16 @@
         440,
         280
       ],
-      "flags": {},
+      "flags": {
+        "collapsed": true
+      },
       "order": 0,
       "mode": 0,
       "inputs": [
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 2937
+          "link": null
         },
         {
           "name": "mask",
@@ -6233,7 +6234,7 @@
       "widgets_values": [
         0.6,
         "40,240,160",
-        false
+        true
       ]
     },
     {
@@ -7242,14 +7243,6 @@
       1123,
       1,
       "MASK"
-    ],
-    [
-      2937,
-      1105,
-      2,
-      1123,
-      0,
-      "IMAGE"
     ],
     [
       2935,

@@ -679,14 +679,16 @@
         440,
         280
       ],
-      "flags": {},
+      "flags": {
+        "collapsed": true
+      },
       "order": 26,
       "mode": 0,
       "inputs": [
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 270
+          "link": null
         },
         {
           "name": "mask",
@@ -701,7 +703,7 @@
           "links": []
         }
       ],
-      "title": "B - REPAIRED MASK - Source overlay",
+      "title": "B - Prepare mask suite (no image preview)",
       "properties": {
         "Node name for S&R": "ImageAndMaskPreview",
         "aux_id": "kijai/ComfyUI-KJNodes"
@@ -709,7 +711,7 @@
       "widgets_values": [
         0.6,
         "40,240,160",
-        false
+        true
       ]
     },
     {
@@ -878,9 +880,7 @@
             246,
             247,
             259,
-            265,
-            270,
-            271
+            265
           ]
         },
         {
@@ -1131,14 +1131,16 @@
         440,
         280
       ],
-      "flags": {},
+      "flags": {
+        "collapsed": true
+      },
       "order": 23,
       "mode": 0,
       "inputs": [
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 271
+          "link": null
         },
         {
           "name": "mask",
@@ -1153,7 +1155,7 @@
           "links": []
         }
       ],
-      "title": "A - REPAIRED MASK - Source overlay",
+      "title": "A - Prepare mask suite (no image preview)",
       "properties": {
         "Node name for S&R": "ImageAndMaskPreview",
         "aux_id": "kijai/ComfyUI-KJNodes"
@@ -1161,7 +1163,7 @@
       "widgets_values": [
         0.6,
         "40,240,160",
-        false
+        true
       ]
     },
     {
@@ -1635,22 +1637,6 @@
       5026,
       1,
       "MASK"
-    ],
-    [
-      270,
-      5020,
-      1,
-      5026,
-      0,
-      "IMAGE"
-    ],
-    [
-      271,
-      5020,
-      1,
-      5023,
-      0,
-      "IMAGE"
     ]
   ],
   "groups": [

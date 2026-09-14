@@ -111,7 +111,7 @@ function openEditor(node, widget) {
  canvas.onpointercancel=()=>{drawing=null;};
  async function queueRepair(){
   const p=await app.graphToPrompt(),id=String(node.id),output={},visit=k=>{if(output[k])return;if(!p.output[k])throw Error('Repair node is disabled. Enable it first.');output[k]=p.output[k];for(const v of Object.values(output[k].inputs))if(Array.isArray(v)&&typeof v[1]==='number'&&p.output[String(v[0])])visit(String(v[0]));};visit(id);
-  output['h3_repair_preview']={class_type:'ImageAndMaskPreview',inputs:{image:output[id].inputs.images,mask:[id,0],mask_opacity:.6,mask_color:'40,240,160',pass_through:false}};
+  output['h3_repair_preview']={class_type:'ImageAndMaskPreview',inputs:{mask:[id,0],mask_opacity:.6,mask_color:'40,240,160',pass_through:true}};
   if(Object.values(output).some(n=>/Sampler|Guider/.test(n.class_type)))throw Error('Unexpected generation dependency. Repair queue stopped.');
   await api.queuePrompt(-1,{output,workflow:p.workflow});status.textContent='Repair queued. This runs mask processing only. The preview updates when complete.';
  }

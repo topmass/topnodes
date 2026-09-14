@@ -3617,8 +3617,7 @@
           "type": "IMAGE",
           "links": [
             2890,
-            2928,
-            2937
+            2928
           ]
         },
         {
@@ -5851,7 +5850,7 @@
     {
       "id": 1123,
       "type": "ImageAndMaskPreview",
-      "title": "MASK SUITE - Finished mask over source",
+      "title": "A - Prepare mask suite (no image preview)",
       "pos": [
         -2300.985377826286,
         7224.522775541317
@@ -5860,14 +5859,16 @@
         440,
         280
       ],
-      "flags": {},
+      "flags": {
+        "collapsed": true
+      },
       "order": 87,
       "mode": 0,
       "inputs": [
         {
           "name": "image",
           "type": "IMAGE",
-          "link": 2937
+          "link": null
         },
         {
           "name": "mask",
@@ -5889,7 +5890,7 @@
       "widgets_values": [
         0.6,
         "40,240,160",
-        false
+        true
       ]
     },
     {
@@ -6818,14 +6819,6 @@
       1123,
       1,
       "MASK"
-    ],
-    [
-      2937,
-      1105,
-      2,
-      1123,
-      0,
-      "IMAGE"
     ],
     [
       2935,

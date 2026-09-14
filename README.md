@@ -57,6 +57,8 @@ Select equivalent compatible files if your filenames differ. The supplied quanti
 
 Click **Done** and save the workflow. Turn **STEP 1 - Mask suite preview** off and **STEP 2** on to generate video. Keep the mask suite node itself enabled. ComfyUI can reuse its cached result; after a restart, it replays the saved edits with SAM. This is not a separate saved mask file. The editor keeps separate edit sessions for each source and size, so switching clips does not require clearing another clip's edits. Point tracking can stop at a scene cut. Check each new shot and add a target point if its mask is missing; text-based SAM re-detection is not part of this workflow.
 
+The mask stage keeps a collapsed preparation node with image previews disabled. Inspect masks inside the suite; Apply does not build or save a second full-resolution overlay batch.
+
 ### Prompt-based workflows
 
 1. Upload the source clip, choose output size, and provide reference A (and B in the duo).
