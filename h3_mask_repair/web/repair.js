@@ -27,27 +27,33 @@ app.registerExtension({
 function openEditor(node, widget) {
  const dialog = document.createElement('dialog');
  dialog.style.cssText = 'width:min(1000px,95vw);background:#20242b;color:white;padding:20px;border:1px solid #667;border-radius:12px';
- dialog.innerHTML = `<h2></h2><p>Run the mask stage first. Green adds the target; red excludes another area. Paint and Erase work without SAM.</p>
+ dialog.innerHTML = `<h2></h2><p>Add: click a target or draw a mask. Erase: click a connected mask area to remove it, or drag to erase part of it.</p>
  <div><label>View <select aria-label="Mask view"><option value="overlay">Mask over source video</option><option value="mask">Mask only</option><option value="source">Source only</option></select></label> <label><input type="checkbox" aria-label="Highlight all mask pixels" checked> Highlight even faint mask pixels</label> <label>Zoom <select aria-label="Mask zoom"><option value="1">Fit</option><option value="2">2x</option><option value="4">4x</option></select></label> <strong data-pixels></strong></div>
  <div style="max-height:55vh;overflow:auto" data-viewport><canvas style="width:100%;height:auto;touch-action:none;cursor:crosshair"></canvas></div>
  <div style="display:flex;gap:8px;align-items:center;margin:12px 0"><button data-act="prev">Previous</button><input aria-label="Video frame" type="range" min="0" value="0" style="flex:1"><button data-act="next">Next</button><output></output></div>
- <div style="display:flex;gap:10px;flex-wrap:wrap"><label>Tool <select aria-label="Repair tool"><option value="positive">Add target point</option><option value="negative">Exclude point</option><option value="paint">Paint mask</option><option value="erase">Erase mask</option></select></label>
+ <div style="display:flex;gap:10px;flex-wrap:wrap"><label>Action <select aria-label="Repair tool"><option value="positive">Add mask</option><option value="erase">Erase mask</option></select></label>
  <label><input type="checkbox" aria-label="Replace entire frame mask"> Replace entire frame mask with my new selection/paint</label>
  <label>Brush <input aria-label="Brush size" type="number" value="20" min="1" max="200" style="width:60px"> px</label>
  <label>Repair range <select aria-label="Repair range"><option value="forward">From this frame to the end</option><option value="single">This frame only</option><option value="custom">Through a chosen frame</option></select></label>
  <label>Through frame <input aria-label="Last repair frame" type="number" value="1" min="1" style="width:80px"></label>
- <button data-act="apply">Apply and preview mask only</button><button data-act="draft">Clear new marks</button><button data-act="undo">Undo last repair</button><button data-act="empty-frame">Empty this frame</button><button data-act="reset-frame">Reset this frame to SAM</button><button data-act="clear">Clear all repairs</button><button data-act="close">Keep edits and close</button></div>
+ <button data-act="apply">Apply</button><button data-act="draft">Clear new marks</button><button data-act="undo">Undo last change</button><button data-act="empty-frame">Empty this frame</button><button data-act="reset-frame">Reset this frame to SAM</button><button data-act="clear">Clear all repairs</button><button data-act="close">Done</button></div>
  <p role="status"></p><small>Frame numbers start at 1. Choose a repair range, then click Apply. You can correct a later failure without changing earlier frames. Reset this frame restores its original selected SAM mask. Tracking replaces masks only in the selected range. Save the workflow to keep edits. Original SAM saves stay unchanged.</small>`;
  dialog.querySelector('h2').textContent = node.title;
  document.body.append(dialog); dialog.showModal();
+ const advanced=document.createElement('details');advanced.innerHTML='<summary>More options</summary>';dialog.append(advanced);
+ for(const selector of ['[aria-label="Mask view"]','[aria-label="Highlight all mask pixels"]','[aria-label="Replace entire frame mask"]','[aria-label="Brush size"]','[aria-label="Last repair frame"]'])advanced.append(dialog.querySelector(selector).parentElement);
+ for(const action of ['draft','empty-frame','reset-frame','clear'])advanced.append(dialog.querySelector(`[data-act="${action}"]`));
+ advanced.append(dialog.querySelector('small'));
  const canvas=dialog.querySelector('canvas'), ctx=canvas.getContext('2d'), slider=dialog.querySelector('[type=range]');
  const view=dialog.querySelector('[aria-label="Mask view"]'), highlight=dialog.querySelector('[aria-label="Highlight all mask pixels"]'), zoom=dialog.querySelector('[aria-label="Mask zoom"]'), replace=dialog.querySelector('[aria-label="Replace entire frame mask"]');
  const range=dialog.querySelector('[aria-label="Repair range"]');
  const [brush,end]=dialog.querySelectorAll('[type=number]'), status=dialog.querySelector('[role=status]');
- let draft={positive:[],negative:[],strokes:[],replace:false}, frame=0, base=null, overlay=null, drawing=null, loadId=0, maskImage=null;
+ let draft={positive:[],negative:[],strokes:[],erase_points:[],replace:false}, frame=0, base=null, overlay=null, drawing=null, loadId=0, maskImage=null;
  const spec=()=>JSON.parse(widget.value || '{}');
  const save=s=>{widget.value=JSON.stringify(s); widget.callback?.(widget.value); app.graph.setDirtyCanvas(true);};
- const blank=()=>{draft={positive:[],negative:[],strokes:[],replace:false};replace.checked=false;drawing=null;};
+ const blank=()=>{draft={positive:[],negative:[],strokes:[],erase_points:[],replace:false};replace.checked=false;drawing=null;};
+ const actionTool=dialog.querySelector('[aria-label="Repair tool"]');
+ actionTool.onchange=()=>{blank();replace.disabled=actionTool.value==='erase';draw();};
  view.onchange=()=>draw();
  replace.onchange=()=>{draft.replace=replace.checked;draw();};
  zoom.onchange=()=>{canvas.style.width=`${Number(zoom.value)*Math.min(dialog.clientWidth-40,window.innerHeight*.48*canvas.width/canvas.height)}px`;};
@@ -63,7 +69,7 @@ function openEditor(node, widget) {
    s.points.forEach((p,i)=>i?ctx.lineTo(p.x*canvas.width,p.y*canvas.height):ctx.moveTo(p.x*canvas.width,p.y*canvas.height));
    if(s.points.length===1){const p=s.points[0];ctx.lineTo(p.x*canvas.width+.1,p.y*canvas.height);}ctx.stroke();
   }
-  for(const key of ['positive','negative'])for(const p of draft[key]){ctx.fillStyle=key==='positive'?'#00ff80':'#ff3344';ctx.beginPath();ctx.arc(p.x*canvas.width,p.y*canvas.height,5,0,Math.PI*2);ctx.fill();}
+  for(const key of ['positive','negative','erase_points'])for(const p of draft[key]){ctx.fillStyle=key==='positive'?'#00ff80':'#ff3344';ctx.beginPath();ctx.arc(p.x*canvas.width,p.y*canvas.height,5,0,Math.PI*2);ctx.fill();}
  }
  function updateRange() {
   end.disabled=range.value!=='custom';
@@ -90,12 +96,12 @@ function openEditor(node, widget) {
  slider.oninput=()=>change(Number(slider.value));
  function point(e){const r=canvas.getBoundingClientRect();return{x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))};}
  canvas.onpointerdown=e=>{
-  if(!base)return;canvas.setPointerCapture(e.pointerId);const tool=dialog.querySelector('[aria-label="Repair tool"]').value,p=point(e);
-  if(tool==='positive'||tool==='negative')draft[tool].push(p);
-  else {drawing={mode:tool,width:Math.min(200,Math.max(1,Number(brush.value)))/canvas.width,points:[p]};draft.strokes.push(drawing);}draw();
+  if(!base)return;canvas.setPointerCapture(e.pointerId);
+  drawing={mode:actionTool.value==='erase'?'erase':'paint',width:Math.min(200,Math.max(1,Number(brush.value)))/canvas.width,points:[point(e)]};draft.strokes.push(drawing);draw();
  };
- canvas.onpointermove=e=>{if(drawing){drawing.points.push(point(e));draw();}};
- canvas.onpointerup=canvas.onpointercancel=()=>{drawing=null;};
+ canvas.onpointermove=e=>{if(drawing){const p=point(e),first=drawing.points[0];if(drawing.points.length>1||Math.hypot((p.x-first.x)*canvas.width,(p.y-first.y)*canvas.height)>3){drawing.points.push(p);draw();}}};
+ canvas.onpointerup=()=>{if(drawing&&drawing.points.length===1){draft.strokes.pop();draft[actionTool.value==='erase'?'erase_points':'positive'].push(drawing.points[0]);}drawing=null;draw();};
+ canvas.onpointercancel=()=>{drawing=null;};
  async function queueRepair(){
   const p=await app.graphToPrompt(),id=String(node.id),output={},visit=k=>{if(output[k])return;if(!p.output[k])throw Error('Repair node is disabled. Enable it first.');output[k]=p.output[k];for(const v of Object.values(output[k].inputs))if(Array.isArray(v)&&typeof v[1]==='number'&&p.output[String(v[0])])visit(String(v[0]));};visit(id);
   output['h3_repair_preview']={class_type:'ImageAndMaskPreview',inputs:{image:output[id].inputs.images,mask:[id,0],mask_opacity:.6,mask_color:'40,240,160',pass_through:false}};
@@ -110,10 +116,11 @@ function openEditor(node, widget) {
    if(action==='apply'){
     if(!node.repairPreview)throw Error('Run the mask stage first.');
     const s=spec(),last=Number(end.value)-1;
+    if(!draft.positive.length&&!draft.erase_points.length&&!draft.strokes.length&&!draft.replace)throw Error('Click or draw on the video first.');
     if(!Number.isInteger(last)||last<frame||last>=node.repairPreview.frames)throw Error('Choose an end frame at or after this frame.');
     if(draft.negative.length&&!draft.positive.length)throw Error('Add a green target point too, or use Erase.');
     if(s.steps?.length&&s.signature!==node.repairPreview.signature)throw Error('Source changed. Clear all repairs first.');
-    save({signature:node.repairPreview.signature,steps:[...(s.steps||[]),{frame,end:last,...draft}]});blank();await queueRepair();
+    save({signature:node.repairPreview.signature,steps:[...(s.steps||[]),{frame,end:last,...draft,erase_only:actionTool.value==='erase'}]});blank();await queueRepair();
    }
    if(action==='empty-frame'){if(!node.repairPreview)throw Error('Run the mask stage first.');const s=spec();if(s.steps?.length&&s.signature!==node.repairPreview.signature)throw Error('Source changed. Clear all repairs first.');save({signature:node.repairPreview.signature,steps:[...(s.steps||[]),{frame,end:frame,replace:true}]});blank();await queueRepair();}
    if(action==='reset-frame'){if(!node.repairPreview)throw Error('Run the mask stage first.');const s=spec();if(s.steps?.length&&s.signature!==node.repairPreview.signature)throw Error('Source changed. Clear all repairs first.');save({signature:node.repairPreview.signature,steps:[...(s.steps||[]),{frame,end:frame,restore:true}]});blank();await queueRepair();}

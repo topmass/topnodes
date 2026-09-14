@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
+from scipy.ndimage import label
 import torch
 import torch.nn.functional as F
 
@@ -34,7 +35,11 @@ def apply_mask_repairs(images, masks, steps, segment, track):
             result[first] = masks[first]
             continue
         positive, negative = step.get('positive', []), step.get('negative', [])
-        for point in positive + negative:
+        erase_points = step.get('erase_points', [])
+        erase_only = step.get('erase_only', False)
+        if erase_only and (positive or negative or step.get('replace') or any(s['mode'] != 'erase' for s in step.get('strokes', []))):
+            raise ValueError('Use Add and Erase as separate repairs.')
+        for point in positive + negative + erase_points:
             if not (0 <= point['x'] <= 1 and 0 <= point['y'] <= 1):
                 raise ValueError('Repair points must be inside the image.')
         if negative and not positive:
@@ -43,9 +48,17 @@ def apply_mask_repairs(images, masks, steps, segment, track):
         if positive:
             coords = lambda points: [{'x': min(width - 1, round(p['x'] * width)), 'y': min(height - 1, round(p['y'] * height))} for p in points]
             seed = segment(images[first:first + 1], coords(positive), coords(negative))[0].to(result)
+        if erase_points:
+            if not erase_only:
+                raise ValueError('Mask removal points require Erase mode.')
+            regions, _ = label((seed > 0).detach().cpu().numpy(), structure=np.ones((3, 3)))
+            selected = {regions[min(height - 1, round(p['y'] * height)), min(width - 1, round(p['x'] * width))] for p in erase_points} - {0}
+            if not selected:
+                raise ValueError('Click inside a visible mask to erase it, or drag across it with the brush.')
+            seed[torch.from_numpy(np.isin(regions, list(selected))).to(seed.device)] = 0
         strokes = step.get('strokes', [])
         if strokes:
-            canvas = Image.fromarray((seed.detach().cpu().clamp(0, 1).numpy() * 255).astype(np.uint8))
+            canvas = Image.new('L', (width, height), 255) if erase_only else Image.fromarray((seed.detach().cpu().clamp(0, 1).numpy() * 255).astype(np.uint8))
             draw = ImageDraw.Draw(canvas)
             for stroke in strokes:
                 if stroke['mode'] not in ('paint', 'erase') or not 0 < stroke['width'] <= 1:
@@ -59,7 +72,19 @@ def apply_mask_repairs(images, masks, steps, segment, track):
                     draw.line(points, fill=fill, width=max(1, round(radius * 2)))
                 for x, y in points:
                     draw.ellipse((x-radius, y-radius, x+radius, y+radius), fill=fill)
-            seed = torch.from_numpy(np.asarray(canvas).copy()).to(result) / 255
+            painted = torch.from_numpy(np.asarray(canvas).copy()).to(result) / 255
+            seed = seed * painted if erase_only else painted
+        if erase_only:
+            removed = (result[first] > 0) & (seed == 0)
+            if not removed.any():
+                raise ValueError('No mask was touched. Click inside a mask or drag across it.')
+            if last > first:
+                removal = track(images[first:last + 1], removed.to(result).unsqueeze(0)).to(result)
+                if len(removal) != last - first + 1:
+                    raise ValueError('SAM returned the wrong erase frame count.')
+                result[first:last + 1] = result[first:last + 1].masked_fill(removal > 0.5, 0)
+            result[first] = seed
+            continue
         if step.get('replace') and not seed.any():
             result[first:last + 1] = 0
             continue

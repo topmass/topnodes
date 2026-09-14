@@ -69,3 +69,15 @@ with tempfile.TemporaryDirectory() as d:
  import numpy as np
  assert np.asarray(Image.open(Path(d)/preview['directory']/'mask-0.png')).any()
 print('PASS: replace removes old islands, empty range stays empty, subpixel masks remain visible')
+
+objects=torch.zeros(5,16,16);objects[:,2:6,2:6]=1;objects[:,10:14,10:14]=1
+remove={'frame':1,'end':3,'erase_only':True,'erase_points':[{'x':.2,'y':.2}]}
+remaining=m.apply_mask_repairs(images,objects,[remove],segment,track)
+assert not remaining[1:4,2:6,2:6].any() and remaining[:,10:14,10:14].all()
+assert torch.equal(remaining[0],objects[0]) and torch.equal(remaining[4],objects[4])
+assert torch.all(remaining<=objects)
+drag={'frame':0,'end':0,'erase_only':True,'strokes':[{'mode':'erase','width':.1,'points':[{'x':.2,'y':.2},{'x':.2,'y':.3}]}]}
+remaining=m.apply_mask_repairs(images,objects,[drag],segment,track)
+assert remaining[0].sum()<objects[0].sum() and remaining[0,10:14,10:14].all()
+assert torch.equal(remaining[1:],objects[1:])
+print('PASS: click erase removes selected island; forward erase only subtracts; drag preserves other frames')
