@@ -45,6 +45,8 @@ def apply_mask_repairs(images, masks, steps, segment, track):
         if negative and not positive:
             raise ValueError('Add a green point inside the target before using red exclude points, or use Erase.')
         seed = torch.zeros_like(result[first]) if step.get('replace') else result[first].clone()
+        if erase_only and not seed.any():
+            continue
         if positive:
             coords = lambda points: [{'x': min(width - 1, round(p['x'] * width)), 'y': min(height - 1, round(p['y'] * height))} for p in points]
             seed = segment(images[first:first + 1], coords(positive), coords(negative))[0].to(result)
@@ -82,6 +84,11 @@ def apply_mask_repairs(images, masks, steps, segment, track):
                 removal = track(images[first:last + 1], removed.to(result).unsqueeze(0)).to(result)
                 if len(removal) != last - first + 1:
                     raise ValueError('SAM returned the wrong erase frame count.')
+                if erase_points and not strokes:
+                    for offset, current in enumerate(result[first:last + 1]):
+                        regions, _ = label((current > 0).detach().cpu().numpy(), structure=np.ones((3, 3)))
+                        selected = np.unique(regions[(removal[offset] > 0.5).detach().cpu().numpy()])
+                        removal[offset] = torch.from_numpy(np.isin(regions, selected[selected != 0])).to(removal)
                 result[first:last + 1] = result[first:last + 1].masked_fill(removal > 0.5, 0)
             result[first] = seed
             continue

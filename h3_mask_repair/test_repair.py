@@ -89,3 +89,18 @@ remaining=m.apply_mask_repairs(images,objects,[drag],segment,track)
 assert remaining[0].sum()<objects[0].sum() and remaining[0,10:14,10:14].all()
 assert torch.equal(remaining[1:],objects[1:])
 print('PASS: click erase removes selected island; forward erase only subtracts; drag preserves other frames')
+
+# A second SAM pass can be smaller than the source mask. Click erase must include its edge pixels.
+def track_smaller(frames,seed):
+ out=torch.zeros(len(frames),16,16);out[:,3:5,3:5]=1
+ return out
+remaining=m.apply_mask_repairs(images,objects,[remove],segment,track_smaller)
+assert not remaining[1:4,2:6,2:6].any() and remaining[:,10:14,10:14].all()
+assert torch.equal(remaining[0],objects[0]) and torch.equal(remaining[4],objects[4])
+brush_range={**drag,'end':3}
+remaining=m.apply_mask_repairs(images,objects,[brush_range],segment,track_smaller)
+assert remaining[1,2,2]==1 and remaining[1,3,3]==0
+only_one=objects.clone();only_one[:,10:14,10:14]=0
+remaining=m.apply_mask_repairs(images,only_one,[remove,{**drag,'frame':2,'end':3}],segment,track_smaller)
+assert not remaining[1:4].any()
+print('PASS: forward click erase removes edge residue; brush erase stays local')
