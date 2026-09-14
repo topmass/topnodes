@@ -30,7 +30,7 @@ git apply --check ../topnodes/patches/vhs-fps-rounding.patch
 git apply ../topnodes/patches/vhs-fps-rounding.patch
 ```
 
-The patch modifies only FPS rounding and its input. It was checked against public upstream source when packaged. If the check fails, inspect your installed version instead of forcing the patch. Skip it if your loader already supports `fps_rounding`. Restart after applying. VideoHelperSuite updates may require reapplying it.
+The patch adds FPS rounding and disables a second raw-output FPS conversion that can duplicate the opening frame on timestamp-offset clips. If you applied the earlier rounding-only patch, add `"-fps_mode", "passthrough",` before `"-f", "rawvideo"` in the FFmpeg generator output arguments. It was checked against public upstream source when packaged. If the check fails, inspect your installed version instead of forcing the patch. Skip it if your loader already supports `fps_rounding`. Restart after applying. VideoHelperSuite updates may require reapplying it.
 
 ## Workflows and models
 
@@ -58,7 +58,7 @@ Select equivalent compatible files if your filenames differ. The supplied quanti
 2. Set each SAM prompt and maximum tracks. Run the mask preview stage with caches set to **Track + save**.
 3. Choose object indices separately: `0` selects the first tracked object, `1` the second, blank combines all tracks. A and B can use the same saved slot with different indices.
 4. Set good tracking slots to **Reuse saved**. Slots hold their latest save only. Changing video, resolution, or frame conversion invalidates the saved masks. After fresh tracking, old repairs from a different source/mask are skipped without blocking generation. The editor shows a notice. Saved edits remain in the workflow; save a copy before clearing them to start new corrections.
-5. Optionally open each mask repair editor. Scrub to a failure, add a target point, exclude another area, or paint/erase. Choose this frame, this frame through the end, or a custom endpoint. Apply queues mask processing only.
+5. Optionally click **Open mask suite**. Previews show masks over the source video. The suite offers source-only and mask-only views, 2x/4x zoom, faint-pixel highlighting, and full-resolution masked-pixel counts. **Replace entire frame mask** clears the old mask before applying your new selection or paint. **Empty this frame** removes all mask pixels from that frame. Scrub to a failure, add a target point, exclude another area, or paint/erase. Choose this frame, this frame through the end, or a custom endpoint. Apply queues mask processing only.
 6. Save the workflow to keep corrections. Reset restores one frame's original selected SAM mask; Undo removes the latest correction. Later repairs affect only their specified range.
 7. Enable video generation. Keep repair nodes enabled to use corrections; set their `enabled` input false to use selected SAM masks without repairs. Preview-stage switches do not control whether saved corrections feed generation.
 
@@ -85,6 +85,7 @@ python custom_nodes/topnodes/h3_swap_timing.py
 PYTHONPATH=. python custom_nodes/topnodes/h3_sam_cache.py
 PYTHONPATH=. python custom_nodes/topnodes/h3_mask_repair/test_repair.py
 PYTHONPATH=. python custom_nodes/topnodes/check_package.py
+python custom_nodes/topnodes/check_video_loader.py
 ```
 
 Mask tests cover repair ranges, point coordinates, painting, reset, source changes, visible frame counts, and native crop/uncrop with isolated masked frames. Packaging checks cover node registration, workflow settings, and removal of saved repairs. These checks do not run a complete H3 generation or certify every GPU configuration.

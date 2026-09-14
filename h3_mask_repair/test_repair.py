@@ -53,3 +53,19 @@ output=MVEx_SubjectUncropNode.execute(torch.ones_like(crop[0]),source,crop[2],0,
 assert output[2].any() and torch.equal(output[[0,1,3,4]],source[[0,1,3,4]])
 assert not m.H3MaskFrameGate().gate(torch.zeros_like(partial))[0].any()
 print('PASS: native crop/uncrop accepts isolated masked frame; empty frames remain pixel-identical')
+
+with tempfile.TemporaryDirectory() as d:
+ m.folder_paths.get_temp_directory=lambda:d
+ dirty=torch.ones_like(masks)
+ replacement={**paint,'replace':True}
+ clean=m.apply_mask_repairs(images,dirty,[replacement],segment,track)
+ assert clean[2,0,0]==0 and clean[2,8,8]==1 and clean[0].all()
+ empty=m.apply_mask_repairs(images,dirty,[{'frame':1,'end':3,'replace':True}],segment,track)
+ assert not empty[1:4].any() and empty[0].all() and empty[4].all()
+ tiny=torch.zeros(1,16,1600);tiny[0,2,3]=.0001
+ preview=m.H3MaskRepair().repair(torch.zeros(1,16,1600,3),tiny)['ui']['h3_mask_repair'][0]
+ assert preview['mask_pixels']==[1]
+ from PIL import Image
+ import numpy as np
+ assert np.asarray(Image.open(Path(d)/preview['directory']/'mask-0.png')).any()
+print('PASS: replace removes old islands, empty range stays empty, subpixel masks remain visible')

@@ -2,7 +2,7 @@
   "id": "3a967d23-f568-4b56-b8c9-1d0c0e432c14",
   "revision": 0,
   "last_node_id": 1125,
-  "last_link_id": 2936,
+  "last_link_id": 2937,
   "nodes": [
     {
       "id": 119,
@@ -3848,7 +3848,8 @@
           "links": [
             2890,
             2926,
-            2928
+            2928,
+            2937
           ]
         },
         {
@@ -6199,47 +6200,9 @@
       ]
     },
     {
-      "id": 1122,
-      "type": "MaskToImage",
-      "title": "Repaired mask preview",
-      "pos": [
-        -2300,
-        7130
-      ],
-      "size": [
-        440,
-        130
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 0,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "mask",
-          "type": "MASK",
-          "link": 2931
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            2932
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "MaskToImage"
-      },
-      "widgets_values": []
-    },
-    {
       "id": 1123,
-      "type": "PreviewImage",
-      "title": "A - REPAIRED MASK",
+      "type": "ImageAndMaskPreview",
+      "title": "A - REPAIRED MASK - Source overlay",
       "pos": [
         -2300,
         7210
@@ -6253,16 +6216,32 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "images",
+          "name": "image",
           "type": "IMAGE",
-          "link": 2932
+          "link": 2937
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 2931
         }
       ],
-      "outputs": [],
+      "outputs": [
+        {
+          "name": "composite",
+          "type": "IMAGE",
+          "links": []
+        }
+      ],
       "properties": {
-        "Node name for S&R": "PreviewImage"
+        "Node name for S&R": "ImageAndMaskPreview",
+        "aux_id": "kijai/ComfyUI-KJNodes"
       },
-      "widgets_values": []
+      "widgets_values": [
+        0.6,
+        "40,240,160",
+        false
+      ]
     },
     {
       "id": 1125,
@@ -7268,17 +7247,9 @@
       2931,
       1121,
       0,
-      1122,
-      0,
-      "MASK"
-    ],
-    [
-      2932,
-      1122,
-      0,
       1123,
-      0,
-      "IMAGE"
+      1,
+      "MASK"
     ],
     [
       2935,
@@ -7295,6 +7266,14 @@
       204,
       3,
       "MASK"
+    ],
+    [
+      2937,
+      1105,
+      2,
+      1123,
+      0,
+      "IMAGE"
     ]
   ],
   "groups": [

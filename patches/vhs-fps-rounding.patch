@@ -18,6 +18,15 @@
      if custom_width != 0 or custom_height != 0:
          size = target_size(size_base[0], size_base[1], custom_width,
                             custom_height, downscale_ratio=downscale_ratio)
+@@ -248,7 +248,7 @@
+     yield (size_base[0], size_base[1], fps_base, duration, fps_base * duration,
+            1/(force_rate or fps_base), yieldable_frames, size[0], size[1], alpha)
+ 
+-    args_all_frames += ["-f", "rawvideo", "-"]
++    args_all_frames += ["-fps_mode", "passthrough", "-f", "rawvideo", "-"]
+     pbar = ProgressBar(yieldable_frames)
+     try:
+         with subprocess.Popen(args_all_frames, stdout=subprocess.PIPE) as proc:
 @@ -539,6 +539,7 @@
                      "start_time": ("FLOAT", {"default": 0, "min": 0, "max": BIGMAX, "step": .001, "widgetType": "VHSTIMESTAMP"}),
                      },

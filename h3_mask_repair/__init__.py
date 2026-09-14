@@ -39,7 +39,7 @@ def apply_mask_repairs(images, masks, steps, segment, track):
                 raise ValueError('Repair points must be inside the image.')
         if negative and not positive:
             raise ValueError('Add a green point inside the target before using red exclude points, or use Erase.')
-        seed = result[first].clone()
+        seed = torch.zeros_like(result[first]) if step.get('replace') else result[first].clone()
         if positive:
             coords = lambda points: [{'x': min(width - 1, round(p['x'] * width)), 'y': min(height - 1, round(p['y'] * height))} for p in points]
             seed = segment(images[first:first + 1], coords(positive), coords(negative))[0].to(result)
@@ -60,6 +60,9 @@ def apply_mask_repairs(images, masks, steps, segment, track):
                 for x, y in points:
                     draw.ellipse((x-radius, y-radius, x+radius, y+radius), fill=fill)
             seed = torch.from_numpy(np.asarray(canvas).copy()).to(result) / 255
+        if step.get('replace') and not seed.any():
+            result[first:last + 1] = 0
+            continue
         if last > first:
             propagated = track(images[first:last + 1], seed.unsqueeze(0)).to(result)
             if len(propagated) != last - first + 1:
@@ -120,12 +123,14 @@ class H3MaskRepair:
         visible_frames = visible_frames or len(images)
         if not 1 <= visible_frames <= len(images):
             raise ValueError('Invalid visible frame count.')
+        mask_pixels = []
         for i in range(visible_frames):
             frame = (images[i].detach().cpu().clamp(0, 1).numpy() * 255).astype(np.uint8)
             Image.fromarray(frame).resize((preview_w, preview_h)).save(directory / f'frame-{i}.jpg', quality=85)
-            mask = F.interpolate(result[i:i+1, None].float(), size=(preview_h, preview_w), mode='nearest')[0, 0]
-            Image.fromarray((mask.detach().cpu().clamp(0, 1).numpy() * 255).astype(np.uint8)).save(directory / f'mask-{i}.png')
-        return {'ui': {'h3_mask_repair': [{'directory': relative, 'frames': visible_frames, 'width': preview_w, 'height': preview_h, 'signature': signature, 'repairs_skipped': repairs_skipped}]}, 'result': (result,)}
+            mask_pixels.append(int(torch.count_nonzero(result[i] > 0)))
+            mask = F.adaptive_max_pool2d(result[i:i+1, None].float(), (preview_h, preview_w))[0, 0]
+            Image.fromarray(np.ceil(mask.detach().cpu().clamp(0, 1).numpy() * 255).astype(np.uint8)).save(directory / f'mask-{i}.png')
+        return {'ui': {'h3_mask_repair': [{'directory': relative, 'frames': visible_frames, 'width': preview_w, 'height': preview_h, 'signature': signature, 'repairs_skipped': repairs_skipped, 'mask_pixels': mask_pixels, 'source_width': width, 'source_height': height}]}, 'result': (result,)}
 
 
 NODE_CLASS_MAPPINGS = {'H3MaskRepair': H3MaskRepair}
