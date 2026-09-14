@@ -23,9 +23,17 @@ for bad in [{'frame':0,'end':5},{'frame':0,'end':0,'negative':[{'x':.5,'y':.5}]}
  else:raise AssertionError('Invalid repair accepted')
 with tempfile.TemporaryDirectory() as d:
  m.folder_paths.get_temp_directory=lambda:d
+ blank=m.H3MaskRepair().repair(images,visible_frames=4)
+ assert torch.equal(blank['result'][0],masks)
+ assert blank['ui']['h3_mask_repair'][0]['mask_pixels']==[0]*4
+ assert m.H3MaskRepair().check_lazy_status(images)==[]
+ click_spec=json.dumps({'signature':blank['ui']['h3_mask_repair'][0]['signature'],'steps':[step]})
+ assert m.H3MaskRepair().check_lazy_status(images,repairs=click_spec)==['model']
+ paint_spec=json.dumps({'signature':blank['ui']['h3_mask_repair'][0]['signature'],'steps':[paint]})
+ assert m.H3MaskRepair().repair(images,repairs=paint_spec)['result'][0][2,8,8]==1
  result=m.H3MaskRepair().repair(images,masks,visible_frames=4)
  assert result['ui']['h3_mask_repair'][0]['frames']==4
- assert len(list(Path(d).rglob('frame-*.jpg')))==4
+ assert len(list((Path(d)/result['ui']['h3_mask_repair'][0]['directory']).glob('frame-*.jpg')))==4
  old_repairs=json.dumps({'signature':'wrong','steps':[step]})
  assert m.H3MaskRepair().check_lazy_status(images,masks,True,old_repairs)==[]
  skipped=m.H3MaskRepair().repair(images,masks,repairs=old_repairs)

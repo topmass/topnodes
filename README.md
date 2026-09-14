@@ -33,7 +33,7 @@ A manual Git pull does not run installers by itself; the next ComfyUI startup ru
 
 The `workflows` directory contains single-character and two-character FullClip workflows, each with a MaskRepair version. Use the MaskRepair versions for the editor and preservation of unmasked frames. Upload your own video and replacement images; example media and saved tracking are not included.
 
-All four workflows are saved with:
+All workflows are saved with:
 
 - Main model: `Minimax-h3_Singularity_ref2va_pruned_v1.3_int8.safetensors`
 - Turbo enabled at **0.6**: `H3/minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy_resized_avg_rank_21_bf16.safetensors`
@@ -50,6 +50,14 @@ Models are not redistributed. Place the main model in `models/diffusion_models`,
 Select equivalent compatible files if your filenames differ. The supplied quantizations and attention settings are hardware-specific; this is not a universal low-VRAM preset.
 
 ## Use
+
+### Click-first single-character workflow
+
+`TopNodes-Vid-Input-Swap-FullClip-ClickMask.json` starts without a SAM text prompt or existing masks. Restart ComfyUI and refresh the browser after updating the nodes. Choose the clip and output size, then open the mask suite. Opening it queues clip preparation automatically. Click the target, select **From this frame to the end**, and click **Apply**. Scrub to any failure and apply another correction from there, or edit one frame.
+
+Click **Done** and save the workflow. Turn **STEP 1 - Mask suite preview** off and **STEP 2** on to generate video. Keep the mask suite node itself enabled. ComfyUI can reuse its cached result; after a restart, it replays the saved edits with SAM. This is not a separate saved mask file. The editor keeps separate edit sessions for each source and size, so switching clips does not require clearing another clip's edits.
+
+### Prompt-based workflows
 
 1. Upload the source clip, choose output size, and provide reference A (and B in the duo).
 2. Set each SAM prompt and maximum tracks. Run the mask preview stage with caches set to **Track + save**.

@@ -100,10 +100,10 @@ def apply_mask_repairs(images, masks, steps, segment, track):
 class H3MaskRepair:
     @classmethod
     def INPUT_TYPES(cls):
-        return {'required': {'images': ('IMAGE',), 'masks': ('MASK',),
+        return {'required': {'images': ('IMAGE',),
                              'repairs': ('STRING', {'default': '{}', 'multiline': True}),
                              'enabled': ('BOOLEAN', {'default': True})},
-                'optional': {'model': ('MODEL', {'lazy': True}), 'visible_frames': ('INT', {'default': 0, 'min': 0})}}
+                'optional': {'masks': ('MASK',), 'model': ('MODEL', {'lazy': True}), 'visible_frames': ('INT', {'default': 0, 'min': 0})}}
 
     RETURN_TYPES = ('MASK',)
     RETURN_NAMES = ('repaired_mask',)
@@ -112,7 +112,9 @@ class H3MaskRepair:
     OUTPUT_NODE = False
     DESCRIPTION = 'Preview and repair the selected subject mask. Open the editor after running the mask stage. Repairs are stored in the workflow; save the workflow to keep them. No H3 sampling is required to apply mask repairs.'
 
-    def check_lazy_status(self, images, masks, enabled, repairs, model=None, **kwargs):
+    def check_lazy_status(self, images, masks=None, enabled=True, repairs='{}', model=None, **kwargs):
+        if masks is None:
+            masks = images.new_zeros(images.shape[:3])
         spec = json.loads(repairs)
         steps = spec.get('steps', []) if enabled else []
         if steps and spec.get('signature') != repair_signature(images, masks):
@@ -120,7 +122,9 @@ class H3MaskRepair:
         needs_model = any(s.get('positive') or int(s['end']) > int(s['frame']) for s in steps)
         return ['model'] if needs_model and model is None else []
 
-    def repair(self, images, masks, repairs='{}', enabled=True, model=None, visible_frames=0):
+    def repair(self, images, masks=None, repairs='{}', enabled=True, model=None, visible_frames=0):
+        if masks is None:
+            masks = images.new_zeros(images.shape[:3])
         if images.shape[0] != masks.shape[0] or tuple(images.shape[1:3]) != tuple(masks.shape[1:3]):
             raise ValueError('Connect source frames and their full-size masks with matching frame counts.')
         spec = json.loads(repairs)

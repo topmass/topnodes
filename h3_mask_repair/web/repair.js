@@ -50,7 +50,7 @@ function openEditor(node, widget) {
  const [brush,end]=dialog.querySelectorAll('[type=number]'), status=dialog.querySelector('[role=status]');
  let draft={positive:[],negative:[],strokes:[],erase_points:[],replace:false}, frame=0, base=null, overlay=null, drawing=null, loadId=0, maskImage=null;
  const spec=()=>JSON.parse(widget.value || '{}');
- const save=s=>{widget.value=JSON.stringify(s); widget.callback?.(widget.value); app.graph.setDirtyCanvas(true);};
+ const save=s=>{widget.value=JSON.stringify({...s,sessions:spec().sessions}); widget.callback?.(widget.value); app.graph.setDirtyCanvas(true);};
  const blank=()=>{draft={positive:[],negative:[],strokes:[],erase_points:[],replace:false};replace.checked=false;drawing=null;};
  const actionTool=dialog.querySelector('[aria-label="Repair tool"]');
  actionTool.onchange=()=>{blank();replace.disabled=actionTool.value==='erase';draw();};
@@ -80,6 +80,13 @@ function openEditor(node, widget) {
  async function refresh() {
   const info=node.repairPreview;
   if(!info){status.textContent='No preview yet. Run STEP 1, then open this editor.';return;}
+  if(node.properties.editor_first && spec().signature!==info.signature){
+   const s=spec(),sessions=s.sessions||{};
+   if(s.signature)sessions[s.signature]=s.steps||[];
+   widget.value=JSON.stringify({signature:info.signature,steps:sessions[info.signature]||[],sessions});
+   save(spec());blank();
+   if(spec().steps.length){await queueRepair();return;}
+  }
   const token=++loadId;frame=Math.min(frame,info.frames-1);slider.max=info.frames-1;slider.value=frame;end.max=info.frames;updateRange();
   dialog.querySelector('[data-pixels]').textContent=info.mask_pixels ? `${info.mask_pixels[frame].toLocaleString()} masked source pixels${info.mask_pixels[frame]===0?' - EMPTY':''}` : '';
   base=null;
@@ -88,7 +95,7 @@ function openEditor(node, widget) {
   try{
    const [im,mask]=await Promise.all([load('frame'),load('mask')]);if(token!==loadId)return;
    canvas.width=info.width;canvas.height=info.height;canvas.style.width=`min(100%, ${48*info.width/info.height}vh)`;base=im;overlay=document.createElement('canvas');overlay.width=info.width;overlay.height=info.height;
-   maskImage=mask;makeOverlay();zoom.onchange();draw();status.textContent=info.repairs_skipped ? 'New source or tracking result: old repairs were skipped. These are the new masks. Clear all repairs before adding new corrections; save a workflow copy first if you want to keep the old edits.' : 'Ready. Corrections are saved in this workflow.';
+   maskImage=mask;makeOverlay();zoom.onchange();draw();status.textContent=info.repairs_skipped && !node.properties.editor_first ? 'New source or tracking result: old repairs were skipped. These are the new masks. Clear all repairs before adding new corrections; save a workflow copy first if you want to keep the old edits.' : 'Ready. Corrections are saved in this workflow.';
   }catch(e){status.textContent=e.message;}
  }
  node.refreshRepair=refresh;
@@ -129,5 +136,7 @@ function openEditor(node, widget) {
    if(action==='close')dialog.close();
   }catch(err){status.textContent=err.message;}
  };
- dialog.onclose=()=>{delete node.refreshRepair;dialog.remove();};refresh();
+ dialog.onclose=()=>{delete node.refreshRepair;dialog.remove();};
+ if(node.properties.editor_first){status.textContent='Loading the clip for editing...';queueRepair().catch(err=>{status.textContent=err.message;});}
+ else refresh();
 }
