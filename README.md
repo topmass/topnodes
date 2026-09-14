@@ -61,6 +61,8 @@ The mask stage keeps a collapsed preparation node with image previews disabled. 
 
 ### Prompt-based workflows
 
+The editor keeps corrections separately for each source and selected SAM mask in both single and dual workflows. New tracking results start a matching edit session automatically; previous edits remain saved for their original masks.
+
 1. Upload the source clip, choose output size, and provide reference A (and B in the duo).
 2. Set each SAM prompt and maximum tracks. Run the mask preview stage with caches set to **Track + save**.
 3. Choose object indices separately: `0` selects the first tracked object, `1` the second, blank combines all tracks. A and B can use the same saved slot with different indices.
