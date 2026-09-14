@@ -159,6 +159,8 @@ class H3MaskRepair:
         visible_frames = visible_frames or len(images)
         if not 1 <= visible_frames <= len(images):
             raise ValueError('Invalid visible frame count.')
+        if steps and visible_frames < len(result):
+            result[visible_frames:] = result[visible_frames - 1]
         mask_pixels = []
         for i in range(visible_frames):
             frame = (images[i].detach().cpu().clamp(0, 1).numpy() * 255).astype(np.uint8)

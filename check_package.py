@@ -17,7 +17,8 @@ for path in (root / 'workflows').glob('*.json'):
         assert single_nodes[175]['mode'] == 0
         crop_mask = next(i['link'] for i in single_nodes[181]['inputs'] if i['name'] == 'masks')
         assert single_links[crop_mask][1:3] == [175, 0]
-        assert next(i['link'] for i in single_nodes[204]['inputs'] if i['name'] == 'cropped_masks') is None
+        gate_link = next(i['link'] for i in single_nodes[204]['inputs'] if i['name'] == 'cropped_masks')
+        assert single_links[gate_link][1:3] == [1125, 0]
     graphs = [workflow] + workflow.get('definitions', {}).get('subgraphs', [])
     for graph in graphs:
         for node in graph['nodes']:

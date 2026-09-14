@@ -104,3 +104,15 @@ only_one=objects.clone();only_one[:,10:14,10:14]=0
 remaining=m.apply_mask_repairs(images,only_one,[remove,{**drag,'frame':2,'end':3}],segment,track_smaller)
 assert not remaining[1:4].any()
 print('PASS: forward click erase removes edge residue; brush erase stays local')
+
+with tempfile.TemporaryDirectory() as d:
+ m.folder_paths.get_temp_directory=lambda:d
+ final_paint={**paint,'frame':2,'end':2}
+ saved=json.dumps({'signature':m.repair_signature(images,masks),'steps':[final_paint]})
+ padded=m.H3MaskRepair().repair(images,repairs=saved,visible_frames=3)['result'][0]
+ assert torch.equal(padded[3],padded[2]) and torch.equal(padded[4],padded[2])
+ assert padded[2].any() and not padded[:2].any()
+ erased=json.dumps({'signature':m.repair_signature(images,masks),'steps':[final_paint,{'frame':2,'end':2,'replace':True}]})
+ assert not m.H3MaskRepair().repair(images,repairs=erased,visible_frames=3)['result'][0].any()
+ assert torch.equal(m.H3MaskRepair().repair(images,masks,repairs=saved,enabled=False,visible_frames=3)['result'][0],masks)
+print('PASS: repeated video padding repeats the final edited mask; empty endings and disabled repairs stay unchanged')
