@@ -1040,7 +1040,7 @@
       ],
       "flags": {},
       "order": 80,
-      "mode": 4,
+      "mode": 0,
       "inputs": [
         {
           "localized_name": "masks",
@@ -1116,16 +1116,9 @@
         4,
         4
       ],
-      "widgets_values_named": {
-        "threshold": 0.3,
-        "method": "shrink_grow",
-        "method.shrink": 12,
-        "method.min_frames": 4,
-        "edge_grow": 4
-      },
       "color": "#332922",
       "bgcolor": "#593930",
-      "title": "BYPASSED - Preserve brief and repaired masks"
+      "title": "Original SAM mask cleanup"
     },
     {
       "id": 176,
@@ -1448,8 +1441,7 @@
           "name": "cropped_masks",
           "type": "MASK",
           "links": [
-            2737,
-            2935
+            2737
           ]
         },
         {
@@ -4446,7 +4438,7 @@
           "name": "cropped_masks",
           "shape": 7,
           "type": "MASK",
-          "link": 2936
+          "link": null
         },
         {
           "localized_name": "feather",
@@ -5820,7 +5812,7 @@
       "title": "HOW TO RUN IN TWO STEPS",
       "properties": {},
       "widgets_values": [
-        "1. Leave STEP 1 ON and STEP 2 OFF. Set SAM cache(s) to Track + save. Run and inspect the masks.\n\n2. Once correct, set each SAM cache to Reuse saved. Turn STEP 2 ON. STEP 1 may stay ON for previews or turn OFF. Run as many generations as needed with new H3 prompts, reference images, or seeds.\n\n3. To change a SAM mask, switch that branch back to Track + save and turn STEP 2 OFF while checking it. Reuse mode intentionally ignores SAM prompt/settings edits.\n\nSaved tracking survives restarts. Changing source frames/resolution requires tracking again. Never mute the SAM tracker itself: reuse skips it automatically. Both steps ON with Track + save runs the full pipeline."
+        "1. Leave STEP 1 ON and STEP 2 OFF. Set SAM cache(s) to Track + save. Run and inspect the masks.\n\n2. Once correct, set each SAM cache to Reuse saved. Turn STEP 2 ON. STEP 1 may stay ON for previews or turn OFF. Run as many generations as needed with new H3 prompts, reference images, or seeds.\n\n3. To change a SAM mask, switch that branch back to Track + save and turn STEP 2 OFF while checking it. Reuse mode intentionally ignores SAM prompt/settings edits.\n\nSaved tracking survives restarts. Changing source frames/resolution requires tracking again. Never mute the SAM tracker itself: reuse skips it automatically. Both steps ON with Track + save runs the full pipeline.\nGeneration uses the original SAM workflow cleanup and full-crop compositing. Only mask creation comes from the editor."
       ],
       "widgets_values_named": {
         "text": "1. Leave STEP 1 ON and STEP 2 OFF. Set SAM cache(s) to Track + save. Run and inspect the masks.\n\n2. Once correct, set each SAM cache to Reuse saved. Turn STEP 2 ON. STEP 1 may stay ON for previews or turn OFF. Run as many generations as needed with new H3 prompts, reference images, or seeds.\n\n3. To change a SAM mask, switch that branch back to Track + save and turn STEP 2 OFF while checking it. Reuse mode intentionally ignores SAM prompt/settings edits.\n\nSaved tracking survives restarts. Changing source frames/resolution requires tracking again. Never mute the SAM tracker itself: reuse skips it automatically. Both steps ON with Track + save runs the full pipeline."
@@ -6242,44 +6234,6 @@
         "40,240,160",
         false
       ]
-    },
-    {
-      "id": 1125,
-      "type": "H3MaskFrameGate",
-      "title": "Keep unmasked frames unchanged",
-      "pos": [
-        27.21345837732663,
-        5303.280750263964
-      ],
-      "size": [
-        260,
-        70
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "mode": 0,
-      "order": 0,
-      "inputs": [
-        {
-          "name": "masks",
-          "type": "MASK",
-          "link": 2935
-        }
-      ],
-      "outputs": [
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": [
-            2936
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "H3MaskFrameGate",
-        "aux_id": "topmass/topnodes"
-      }
     }
   ],
   "links": [
@@ -7249,22 +7203,6 @@
       0,
       1123,
       1,
-      "MASK"
-    ],
-    [
-      2935,
-      181,
-      1,
-      1125,
-      0,
-      "MASK"
-    ],
-    [
-      2936,
-      1125,
-      0,
-      204,
-      3,
       "MASK"
     ],
     [

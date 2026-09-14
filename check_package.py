@@ -11,6 +11,13 @@ for name in expected:
     assert nodes.NODE_CLASS_MAPPINGS[name].INPUT_TYPES()
 for path in (root / 'workflows').glob('*.json'):
     workflow = json.loads(path.read_text())
+    if 'TwoPeople' not in path.name and any(n['type'] == 'H3MaskRepair' for n in workflow['nodes']):
+        single_nodes = {n['id']: n for n in workflow['nodes']}
+        single_links = {link[0]: link for link in workflow['links']}
+        assert single_nodes[175]['mode'] == 0
+        crop_mask = next(i['link'] for i in single_nodes[181]['inputs'] if i['name'] == 'masks')
+        assert single_links[crop_mask][1:3] == [175, 0]
+        assert next(i['link'] for i in single_nodes[204]['inputs'] if i['name'] == 'cropped_masks') is None
     graphs = [workflow] + workflow.get('definitions', {}).get('subgraphs', [])
     for graph in graphs:
         for node in graph['nodes']:

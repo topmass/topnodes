@@ -67,7 +67,7 @@ Click **Done** and save the workflow. Turn **STEP 1 - Mask suite preview** off a
 6. Save the workflow to keep corrections. Reset restores one frame's original selected SAM mask; Undo removes the latest correction. Later repairs affect only their specified range.
 7. Enable video generation. Keep repair nodes enabled to use corrections; set their `enabled` input false to use selected SAM masks without repairs. Preview-stage switches do not control whether saved corrections feed generation.
 
-In repair workflows, cleanup is bypassed to preserve brief masks. Empty frames retain the incoming image exactly during compositing; B preserves A's existing result on frames without a B mask. Each active crop branch still needs at least one usable mask somewhere in the clip. Masking every frame is not required.
+Single-character editor workflows use the original SAM workflow cleanup, crop, latent-mask expansion, sampling, and full-crop compositing. The editor replaces only the mask source. Cleanup can remove small or brief manual marks, just as it does with SAM masks. The two-character repair workflow still bypasses cleanup and preserves incoming frames where a subject mask is empty; B preserves A's existing result on those frames. Each active crop branch still needs at least one usable mask somewhere in the clip. Masking every frame is not required.
 
 Output is 24 FPS. Model-required padding is trimmed from the final video and audio. Original audio is the default; regenerated audio remains optional. FPS rounding is source-dependent: single defaults to `near`, duo to `up`, matching the source examples used during development. Inspect cadence when using a different source.
 
